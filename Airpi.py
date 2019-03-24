@@ -158,7 +158,7 @@ if __name__ == '__main__':
         read_pinMQ135 = mq.readadc(0) * 3.3 / 1024.0
         read_pinMQ2 = mq.readadc(1) * 3.3 / 1024.0
         raspberry_temp = os.popen("vcgencmd measure_temp").readline()
-        print("[{0}] Temp={3:0.1f}*C  Humidity={4:0.1f}%  Ratio={1:0.6f}  Concentration={2:0>4.2f} pcs per 0.01 cubic foot  MQ135={5:0.2f} Volts  MQ2={6:0.2f} Volts Raspberry Temp={7}".format(datetime.datetime.now(),r,c,hum,temp,read_pinMQ135,read_pinMQ2,raspberry_temp))
+        print("[{0}] Temp={3:0.1f}*C - Humidity={4:0.1f}% - Ratio={1:0.6f} - Concentration={2:0>4.2f} pcs per 0.01 cubic foot - MQ135={5:0.2f} Volts - MQ2={6:0.2f} Volts - Raspberry Temp={7}".format(datetime.datetime.now(),r,c,hum,temp,read_pinMQ135,read_pinMQ2,raspberry_temp))
         time.sleep(15)
     GPIO.cleanup()	
 
