@@ -24,6 +24,7 @@ import RPi.GPIO as GPIO
 import time
 import datetime
 import Adafruit_DHT
+import os
 
 __author__ = "Nicholas Johnson <nejohnson2@gmail.com>"
 __copyright__ = "Copyright (C) 2016 Nicholas Johnson"
@@ -96,16 +97,69 @@ class Shinyei(object):
 			self._reset()	# remove event detect
 			return [self.lpo, r, c]
 		
+class MQAirSensor(object):
+    
+    def __init__(self) 
+        self.SPICLK = 18
+        self.SPIMISO = 23
+        self.SPIMOSI = 24 
+        self.SPICS = 25
+        GPIO.setup(self.SPIMOSI, GPIO.OUT) 
+        GPIO.setup(self.SPIMISO, GPIO.IN) 
+        GPIO.setup(self.SPICLK, GPIO.OUT) 
+        GPIO.setup(self.SPICS, GPIO.OUT)
+
+        # read SPI data from MCP3008 chip, 8 possible adc's (0 thru 7)
+    def readadc(adcnum): 
+         if ((adcnum > 7) or (adcnum < 0)):
+          return -1 
+
+         GPIO.output(self.SPICS, True) 
+         GPIO.output(self.SPICLK, False)  # start clock low 
+         GPIO.output(self.SPICS, False)   # bring CS low
+         commandout = adcnum
+         commandout |= 0x18 # start bit + single-ended bit 
+         commandout <<= 3 # we only need to send 5 bits here
+
+         for i in range(5):
+          if (commandout & 0x80):
+           GPIO.output(self.SPIMOSI, True) 
+          else:
+           GPIO.output(self.SPIMOSI, False) 
+          commandout <<= 1
+          GPIO.output(self.SPICLK, True) 
+          GPIO.output(self.SPICLK, False)
+
+         adcout = 0
+
+         # read in one empty bit, one null bit and 10 ADC bits 
+         for i in range(12):
+          GPIO.output(self.SPICLK, True) 
+          GPIO.output(self.SPICLK, False) 
+          adcout <<= 1
+          if (GPIO.input(self.SPIMISO)):
+           adcout |= 0x1 
+
+         GPIO.output(self.SPICS, True)
+         adcout >>= 1 # first bit is 'null' so drop it 
+         return adcout
+        
+# Main loop
 
 if __name__ == '__main__':
 	sensor = Adafruit_DHT.DHT22
-	pin = 4
+	pinDHT = 4
 	GPIO.setmode(GPIO.BCM)
 	t = Shinyei(27)
-	while True:
+	mq = MQAirSensor
+    while True:
 		l, r ,c = t.read(30)
-		temp, hum = Adafruit_DHT.read_retry(sensor,pin)
-		print("[{0}] Temp={3:0.1f}*C  Humidity={4:0.1f}% Ratio={1:0.6f} Concentration={2:0.6f} pcs per 0.01 cubic foot".format(datetime.datetime.now(),r,c,hum,temp))
+		temp, hum = Adafruit_DHT.read_retry(sensor,pinDHT)
+        read_pin = readadc(0)
+        print "ADC:", read_pin
+        print("[{0}] Temp={3:0.1f}*C  Humidity={4:0.1f}% Ratio={1:0.6f} Concentration={2:0.6f} pcs per 0.01 cubic foot".format(datetime.datetime.now(),r,c,hum,temp))
 		time.sleep(15)
 	GPIO.cleanup()	
+
+
 
