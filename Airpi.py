@@ -155,9 +155,9 @@ if __name__ == '__main__':
     while True:
         l, r ,c = t.read(30)
         temp, hum = Adafruit_DHT.read_retry(sensor,pinDHT)
-        read_pin = mq.readadc(0)
-        print "ADC:", read_pin
-        print("[{0}] Temp={3:0.1f}*C  Humidity={4:0.1f}% Ratio={1:0.6f} Concentration={2:0.6f} pcs per 0.01 cubic foot".format(datetime.datetime.now(),r,c,hum,temp))
+        read_pinMQ135 = mq.readadc(0)
+        read_pinMQ2 = mq.readadc(1)
+        print("[{0}] Temp={3:0.1f}*C  Humidity={4:0.1f}%  Ratio={1:0.6f}  Concentration={2:0.6f} pcs per 0.01 cubic foot  MQ135={5}mv  MQ2={6}mv".format(datetime.datetime.now(),r,c,hum,temp,read_pinMQ135,read_pinMQ2))
         time.sleep(15)
     GPIO.cleanup()	
 
