@@ -147,19 +147,19 @@ class MQAirSensor(object):
         
 # Main loop
 if __name__ == '__main__':
-	sensor = Adafruit_DHT.DHT22
-	pinDHT = 4
-	GPIO.setmode(GPIO.BCM)
+    sensor = Adafruit_DHT.DHT22
+    pinDHT = 4
+    GPIO.setmode(GPIO.BCM)
     #mq = MQAirSensor()
-	t = Shinyei(27)
+    t = Shinyei(27)
     while True:
-		l, r ,c = t.read(30)
-		temp, hum = Adafruit_DHT.read_retry(sensor,pinDHT)
+        l, r ,c = t.read(30)
+        temp, hum = Adafruit_DHT.read_retry(sensor,pinDHT)
         #read_pin = mq.readadc(0)
         #print "ADC:", read_pin
         print("[{0}] Temp={3:0.1f}*C  Humidity={4:0.1f}% Ratio={1:0.6f} Concentration={2:0.6f} pcs per 0.01 cubic foot".format(datetime.datetime.now(),r,c,hum,temp))
-		time.sleep(15)
-	GPIO.cleanup()	
+        time.sleep(15)
+    GPIO.cleanup()	
 
 
 
