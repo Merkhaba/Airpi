@@ -150,8 +150,8 @@ if __name__ == '__main__':
 	sensor = Adafruit_DHT.DHT22
 	pinDHT = 4
 	GPIO.setmode(GPIO.BCM)
+    mq = MQAirSensor()
 	t = Shinyei(27)
-	mq = MQAirSensor()
     while True:
 		l, r ,c = t.read(30)
 		temp, hum = Adafruit_DHT.read_retry(sensor,pinDHT)
