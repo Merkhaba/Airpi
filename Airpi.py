@@ -110,7 +110,7 @@ class MQAirSensor(object):
         GPIO.setup(self.SPICS, GPIO.OUT)
 
         # read SPI data from MCP3008 chip, 8 possible adc's (0 thru 7)
-    def readadc(adcnum): 
+    def readadc(self, adcnum): 
          if ((adcnum > 7) or (adcnum < 0)):
           return -1 
 
