@@ -155,7 +155,7 @@ if __name__ == '__main__':
     while True:
 		l, r ,c = t.read(30)
 		temp, hum = Adafruit_DHT.read_retry(sensor,pinDHT)
-        read_pin = readadc(0)
+        read_pin = mq.readadc(0)
         print "ADC:", read_pin
         print("[{0}] Temp={3:0.1f}*C  Humidity={4:0.1f}% Ratio={1:0.6f} Concentration={2:0.6f} pcs per 0.01 cubic foot".format(datetime.datetime.now(),r,c,hum,temp))
 		time.sleep(15)
