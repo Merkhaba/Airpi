@@ -143,15 +143,15 @@ class MQAirSensor(object):
          GPIO.output(self.SPICS, True)
          adcout >>= 1 # first bit is 'null' so drop it 
          return adcout
+
         
 # Main loop
-
 if __name__ == '__main__':
 	sensor = Adafruit_DHT.DHT22
 	pinDHT = 4
 	GPIO.setmode(GPIO.BCM)
 	t = Shinyei(27)
-	mq = MQAirSensor
+	mq = MQAirSensor()
     while True:
 		l, r ,c = t.read(30)
 		temp, hum = Adafruit_DHT.read_retry(sensor,pinDHT)
