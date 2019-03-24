@@ -99,7 +99,7 @@ class Shinyei(object):
 		
 class MQAirSensor(object):
     
-    def __init__(self) 
+    def __init__(self): 
         self.SPICLK = 18
         self.SPIMISO = 23
         self.SPIMOSI = 24 
