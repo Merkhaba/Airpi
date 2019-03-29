@@ -185,7 +185,7 @@ class MQ135(MQAirSensor):
     # @return The sensor resistance in kOhm
     # /**************************************************************************/
     def getResistance(self):
-        val = readadc(self.ADC_CHANNEL)
+        val = self.readadc(self.ADC_CHANNEL)
         return ((1023. / val) * 3.3 - 1.) * self.RLOAD
 
     # /**************************************************************************/
