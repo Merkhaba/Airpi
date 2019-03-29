@@ -186,7 +186,6 @@ class MQ135(MQAirSensor):
     # /**************************************************************************/
     def getResistance(self):
         val = readadc(self.ADC_CHANNEL)
-	print val
         return ((1023. / val) * 3.3 - 1.) * self.RLOAD
 
     # /**************************************************************************/
