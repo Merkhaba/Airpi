@@ -145,12 +145,140 @@ class MQAirSensor(object):
          return adcout
 
         
+class MQ135(MQAirSensor):
+    def __init__(self,analog):
+        self.interval = 0
+        self.device_name = "MQ135"    
+        
+        self.ADC_CHANNEL = analog
+        self.RLOAD = 5.0        
+
+        # Parameters for calculating ppm of CO2 from sensor resistance - y = a^x - b, x = ppm, y = Rs/Ro
+        self.PARA = 116.6020682
+        self.PARB = 2.769034857
+
+        # Parameters to model temperature and humidity dependence
+        self.CORA = 0.00035
+        self.CORB = 0.02718
+        self.CORC = 1.39538
+        self.CORD = 0.0018
+
+        # Atmospheric CO2 level for calibration purposes (unit:ppm)
+        self.ATMOCO2 = 411.0
+        self.RZERO = 1.0
+    
+    
+    #####HELPER FUNCTIONS####
+    # source: https://hackaday.io/project/3475-sniffing-trinket/log/12363-mq135-arduino-library
+    # @brief  Get the correction factor to correct for temperature and humidity
+    # @param[in] t  The ambient air temperature
+    # @param[in] h  The relative humidity
+    # @return The calculated correction factor
+    # /**************************************************************************/
+    def getCorrectionFactor(self, t, h):
+        return self.CORA * t * t - self.CORB * t + self.CORC - (h - 33.) * self.CORD
+
+    # /**************************************************************************/
+
+
+    # @brief  Get the resistance of the sensor, ie. the measurement value
+    # @return The sensor resistance in kOhm
+    # /**************************************************************************/
+    def getResistance(self):
+        val = readadc(self.ADC_CHANNEL)
+	print val
+        return ((1023. / val) * 3.3 - 1.) * self.RLOAD
+
+    # /**************************************************************************/
+
+
+    # @brief  Get the resistance of the sensor, ie. the measurement value corrected
+    #         for temp/hum
+    # @param[in] t  The ambient air temperature
+    # @param[in] h  The relative humidity
+    # @return The corrected sensor resistance kOhm
+    # /**************************************************************************/
+    def getCorrectedResistance(self, t, h):
+        return self.getResistance() / self.getCorrectionFactor(t, h)
+
+    # /**************************************************************************/
+
+
+    # @brief  Get the ppm of CO2 sensed (assuming only CO2 in the air)
+    # @return The ppm of CO2 in the air
+    # /**************************************************************************/
+    def getPPM(self):
+        return self.PARA * pow((self.getResistance() / self.RZERO), -self.PARB)
+
+    # /**************************************************************************/
+
+
+    # @brief  Get the ppm of CO2 sensed (assuming only CO2 in the air), corrected
+    #         for temp/hum
+    # @param[in] t  The ambient air temperature
+    # @param[in] h  The relative humidity
+    # @return The ppm of CO2 in the air
+    # /**************************************************************************/
+    def getCorrectedPPM(self, t, h):
+        return self.PARA * pow((self.getCorrectedResistance(t, h) / self.RZERO), -self.PARB)
+
+    # /**************************************************************************/
+
+
+    # @brief  Get the resistance RZero of the sensor for calibration purposes
+    # @return The sensor resistance RZero in kOhm
+    # /**************************************************************************/
+    def getRZero(self):
+        return self.getResistance() * pow((self.ATMOCO2 / self.PARA), (1. / self.PARB))
+
+    # /**************************************************************************/
+
+
+    # @brief  Get the corrected resistance RZero of the sensor for calibration
+    #         purposes
+    #
+    # @param[in] t  The ambient air temperature
+    # @param[in] h  The relative humidity
+    #
+    # @return The corrected sensor resistance RZero in kOhm
+    # /**************************************************************************/
+    def getCorrectedRZero(self, t, h):
+        return self.getCorrectedResistance(t, h) * pow((self.ATMOCO2 / self.PARA), (1. / self.PARB))
+
+    # /**************************************************************************/
+
+    # to calibrate, calculate average value every 0.5 seconds
+    def calibrate135(self, t, h):
+        avg = 0
+        n = 0
+        try:
+            while n<100:
+                x = self.getRZero()
+                n += 1
+                avg = (avg * (n - 1) + x) / n
+                print avg, "kohm, Adcout:", readadc(self.ADC_CHANNEL)
+                time.sleep(0.5)
+        except KeyboardInterrupt:  # If CTRL+C is pressed, exit cleanly:
+            print 'bye'
+        return avg
+    
+    def test(self, t, h)
+        r = getResistance()
+        cor = getCorrectionFactor()
+        r_cor = getCorrectedResistance()
+        print("[{0}] temp={1:0.1f}*C - Humidity={2:0.1f}% - Corection Factor ={3:0.6f} - Resistance ={3:0.6f}- Corected Resistance ={1:0.6f}".format(datetime.datetime.now(),hum,temp,cor,r,r_cor))
+        return
+        
+    
 # Main loop
 if __name__ == '__main__':
     sensor = Adafruit_DHT.DHT22
     pinDHT = 4
     GPIO.setmode(GPIO.BCM)
     mq = MQAirSensor()
+    mq135 = MQ135(0) #pin zero for MQ135 on MCP3008
+    temp, hum = Adafruit_DHT.read_retry(sensor,pinDHT)
+    mq135.test(temp,hum)
     t = Shinyei(27)
     while True:
         l, r ,c = t.read(30)
