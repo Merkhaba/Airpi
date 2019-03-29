@@ -147,6 +147,7 @@ class MQAirSensor(object):
         
 class MQ135(MQAirSensor):
     def __init__(self,analog):
+        MQAirSensor.__init__(self)
         self.interval = 0
         self.device_name = "MQ135"    
         
@@ -274,7 +275,7 @@ if __name__ == '__main__':
     sensor = Adafruit_DHT.DHT22
     pinDHT = 4
     GPIO.setmode(GPIO.BCM)
-    mq = MQAirSensor()
+    #mq = MQAirSensor()
     mq135 = MQ135(0) #pin zero for MQ135 on MCP3008
     temp, hum = Adafruit_DHT.read_retry(sensor,pinDHT)
     mq135.test(temp,hum)
