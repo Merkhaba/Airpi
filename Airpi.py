@@ -262,7 +262,7 @@ class MQ135(MQAirSensor):
             print 'bye'
         return avg
     
-    def test(self, t, h)
+    def test(self, t, h):
         r = getResistance()
         cor = getCorrectionFactor()
         r_cor = getCorrectedResistance()
