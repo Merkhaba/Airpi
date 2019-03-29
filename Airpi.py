@@ -262,9 +262,9 @@ class MQ135(MQAirSensor):
         return avg
     
     def test(self, t, h):
-        r = getResistance()
-        cor = getCorrectionFactor()
-        r_cor = getCorrectedResistance()
+        r = self.getResistance()
+        cor = self.getCorrectionFactor()
+        r_cor = self.getCorrectedResistance()
         print("[{0}] temp={1:0.1f}*C - Humidity={2:0.1f}% - Corection Factor ={3:0.6f} - Resistance ={3:0.6f}- Corected Resistance ={1:0.6f}".format(datetime.datetime.now(),hum,temp,cor,r,r_cor))
         return
         
