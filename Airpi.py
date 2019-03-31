@@ -276,17 +276,17 @@ if __name__ == '__main__':
     pinDHT = 4
     GPIO.setmode(GPIO.BCM)
     mq = MQAirSensor()
-    mq135 = MQ135(0) #pin zero for MQ135 on MCP3008
+    //mq135 = MQ135(0) #pin zero for MQ135 on MCP3008
     temp, hum = Adafruit_DHT.read_retry(sensor,pinDHT)
-    mq135.test(temp,hum)
+    //mq135.test(temp,hum)
     t = Shinyei(27)
     while True:
         l, r ,c = t.read(30)
         temp, hum = Adafruit_DHT.read_retry(sensor,pinDHT)
-        read_pinMQ135 = mq.readadc(0) * 3.3 / 1024.0
-        read_pinMQ2 = mq.readadc(1) * 3.3 / 1024.0
+        read_pinMQ135 = mq.readadc(0)
+        read_pinMQ2 = mq.readadc(1)
         raspberry_temp = os.popen("vcgencmd measure_temp").readline().strip('\n')
-        print("[{0}] Temp={3:0.1f}*C - Humidity={4:0.1f}% - Ratio={1:0.6f} - Concentration={2:0>4.2f} pcs per 0.01 cubic foot - MQ135={5:0.2f} Volts - MQ2={6:0.2f} Volts - Raspberry Temp={7}".format(datetime.datetime.now(),r,c,hum,temp,read_pinMQ135,read_pinMQ2,raspberry_temp))
+        print("[{0}] Temp={3:0.1f}*C - Humidity={4:0.1f}% - Ratio={1:0.6f} - Concentration={2:0>4.2f} pcs per 0.01 cubic foot - MQ135={5:0.2f}/1023 - MQ2={6:0.2f}/1023 - Raspberry Temp={7}".format(datetime.datetime.now(),r,c,hum,temp,read_pinMQ135,read_pinMQ2,raspberry_temp))
         time.sleep(15)
     GPIO.cleanup()	
 
