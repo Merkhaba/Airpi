@@ -272,7 +272,11 @@ class MQ135(MQAirSensor):
     
 # Main loop
 if __name__ == '__main__':
-    f = open("Airpi.csv","a+")
+    #f = open("Airpi.csv","a+")
+    f_dust = open("Airpi_dust.csv","a+")
+    f_MQ135 = open("Airpi_MQ135.csv","a+")
+    f_MQ2 = open("Airpi_MQ2.csv", "a+")
+
     sensor = Adafruit_DHT.DHT22
     pinDHT = 4
     GPIO.setmode(GPIO.BCM)
@@ -287,9 +291,15 @@ if __name__ == '__main__':
         read_pinMQ135 = mq.readadc(0)
         read_pinMQ2 = mq.readadc(1)
         raspberry_temp = os.popen("vcgencmd measure_temp").readline().strip('\n')
-        #print("[{0}]Temp={3:0.1f}*C - Humidity={4:0.1f}% - Ratio={1:0.6f} - Concentration={2:0>4.2f} pcs per 0.01 cubic foot - MQ135={5:0.2f}/1023 - MQ2={6:0.2f}/1023 - Raspberry Temp={7}".format(datetime.datetime.now(),r,c,hum,temp,read_pinMQ135,read_pinMQ2,raspberry_temp))
-        f.write("{0},{3:0.1f},{4:0.1f},{1:0.6f},{2:0>4.2f},{5:0.2f},{6:0.2f},{7}\n".format(datetime.datetime.now(),r,c,hum,temp,read_pinMQ135,read_pinMQ2,raspberry_temp))
-        f.flush()
+        print("[{0}]Temp={3:0.1f}*C - Humidity={4:0.1f}% - Ratio={1:0.6f} - Concentration={2:0>4.2f} pcs per 0.01 cubic foot - MQ135={5:0.2f}/1023 - MQ2={6:0.2f}/1023 - Raspberry Temp={7}".format(datetime.datetime.now(),r,c,hum,temp,read_pinMQ135,read_pinMQ2,raspberry_temp))
+        #f.write("{0},{3:0.1f},{4:0.1f},{1:0.6f},{2:0>4.2f},{5:0.2f},{6:0.2f},{7}\n".format(datetime.datetime.now(),r,c,hum,temp,read_pinMQ135,read_pinMQ2,raspberry_temp))
+        #f.flush()
+        f_dust.write("{0},{1:0.2f},{2:0.2f},{3:0.6f},{4:0.6f}\n".format(datetime.datetime.now(),temp,hum,r,c))
+        f_MQ135.write("{0},{1:0.2f},{2:0.2f},{3:0.6f}\n".format(datetime.datetime.now(), temp, hum, read_pinMQ135))
+        f_MQ2.write("{0},{1:0.2f},{2:0.2f},{3:0.6f}\n".format(datetime.datetime.now(), temp, hum, read_pinMQ2))
+        f_dust.flush()
+        f_MQ2.flush()
+        f_MQ135.flush()
         time.sleep(15)
     GPIO.cleanup()
     f.close()
