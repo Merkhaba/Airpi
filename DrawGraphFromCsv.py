@@ -1,5 +1,7 @@
 import math
+import csv
 import matplotlib.pyplot as plt
+import datetime
 
 tempArray = dict()
 humArray = dict()
@@ -36,6 +38,12 @@ def ArrayInterpolation(temp, tempArray, ratioArray):
     y = Interpolation(temp, tempArray[i], tempArray[i + 1], ratioArray[i], ratioArray[i + 1])
     return y
 
+
+def identityTemp(value, ratio, shift):
+    return value
+
+def identityHum(value, ratio, shift):
+    return value
 
 def identity(value, ratio, shift):
     return value
@@ -107,48 +115,41 @@ def diffAgainstRatioWithShift(value, ratio, shift):
 
 
 def Draw(str, color, axe, function=identity, linestyle='-'):
-    shift = 9999
-    ratio_shift = 1.0
-    query = """select r.event_date,d.libelle,r.raw,d.comments
-        from SensorDB.sensor_raw r,SensorDB.sensor_definition d
-        where r.id_sensor = d.id_sensor
-        and r.event_date > DATE_ADD(sysdate(),INTERVAL - 7 DAY)
-        and d.libelle = '{0}'
-        order by r.event_date desc, r.id_sensor desc"""
-    cur.execute(query.format(str))
-    rows = cur.fetchall()
+    shift = 9999.9
     x = list()
     y = list()
     _ratio = 1.0
-    _error_ratio = 0;
-    for row in rows:
-        if str == 'Temp':
-            tempArray[row[0]] = row[2]
-        elif str == 'Hum':
-            humArray[row[0]] = row[2]
-        else:
-            try:
-                temp = tempArray[row[0]]
-                hum = humArray[row[0]]
-                _ratio = getRatio(temp, hum)
-            except KeyError:
-                # do not set the new ratio
-                _error_ratio += 1
-                # print ("Temp or hum not found for {0}".format(row[0]))
-        x.append(row[0])
-        input = row[2]
-        if input < shift:
-            ratio_shift = _ratio
-        shift = min(input, shift)
-        value = function(input, _ratio, shift)
-        y.append(value)
-    print ('Ratio Errors {0} on {1}'.format(_error_ratio, str))
+    with open('Airpi_{0}.csv'.format(str)) as csvFile:
+        rows = csv.reader(csvFile)
+        for row in rows:
+            #print('{0},{1},{2},{3}'.format(row[0], row[1], row[2],row[3]))
+            temp = float(row[2])
+            hum = float(row[1])
+            _ratio = getRatio(temp, hum)
+            from dateutil import parser
+            dt = parser.parse(row[0])
+            if dt <= datetime.datetime.now()-datetime.timedelta(days=1):
+                continue
+            x.append(dt)
+            if function == identityTemp:
+                input = temp
+                str = 'Temperature'
+            elif function == identityHum:
+                input = hum
+                str = 'Humidity'
+            else:
+                input = float(row[3])
+            if input < shift:
+                ratio_shift = _ratio
+            shift = min(input, shift)
+            value = function(input, _ratio, shift)
+            y.append(value)
     axe.spines['left'].set_color(color)
     # axe = ax1.twinx()
     # axe.spines['right'].set_position(('axes', 1.0 + (index - 1) * 0.05))
     # axe.spines['right'].set_color(color)
     axe.plot(x, y, color=color, linewidth=0.5, linestyle=linestyle,
-             label='{0} (min:{1:0.0f} ratio:{2:0.8f}) - {3}'.format(str, shift, ratio_shift, row[3]))
+             label='{0} (min:{1:0.0f} ratio:{2:0.8f}) - {3}'.format(str, shift, ratio_shift, input))
     axe.yaxis.label.set_color(color)
     axe.set_ylabel(str)
     axe.tick_params('y', color=color)
@@ -158,7 +159,7 @@ def Draw(str, color, axe, function=identity, linestyle='-'):
 def ppmMQ135CO2(value, ratio, shift):
     sensor_volt = value / 1024 * 3.3
     Rs = (5.0 - sensor_volt) / sensor_volt
-    Ro = 1200
+    Ro = 4500
     RsRo = Rs / (Ro * ratio)
     slope = -2.863140157
     intercept = 2.032692781
@@ -199,10 +200,6 @@ def ppmMQ135CO(value, ratio, shift):
     return ppm
 
 
-#db = MySQLdb.connect(host="192.168.0.50", user="sensor", passwd="NotAPW0!")
-db = MySQLdb.connect(host="78.126.188.180", user="sensor", passwd="NotAPW0!")
-cur = db.cursor()
-print ('DB connection Successfull')
 print('-' * 120)
 
 fig = plt.figure(figsize=(17, 10))
@@ -215,15 +212,15 @@ ax13.spines['right'].set_position(('axes', 1.04))
 ax13.spines['right'].set_color('b')
 ax2 = plt.subplot2grid((4, 1), (1, 0), sharex=ax1, rowspan=3)
 
-Draw('Temp', 'y', ax1, identity, '-')
-Draw('Hum', 'g', ax12, identity, '-')
-Draw('MQ-135', 'b', ax13, ratio, '-')
+Draw('MQ135', 'y', ax1, identityTemp, '-')
+Draw('MQ135', 'g', ax12, identityHum, '-')
+Draw('MQ135', 'b', ax13, ratio, '-')
 #Draw('PPD42NS', 'b', ax1, identity)
 
-Draw('MQ-135','b', ax2         , identity,'-')
-Draw('MQ-135','r', ax2         , identitywithRatio,'-')
-Draw('MQ-135','g',ax2          , roCO2Calibration,'-')
-#Draw('MQ-135','r', ax2         , ppmMQ135CO2,':')
+Draw('MQ135','b', ax2         , identity,'-')
+Draw('MQ135','r', ax2         , identitywithRatio,'-')
+#Draw('MQ135','g',ax2          , roCO2Calibration,'-')
+Draw('MQ135','r', ax2         , ppmMQ135CO2,':')
 
 #Draw('MQ-135','b', ax2         , identity,'-')
 #Draw('MQ-7'  ,'r', ax2        , identity,'-')
