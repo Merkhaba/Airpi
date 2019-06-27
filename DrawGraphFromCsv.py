@@ -86,23 +86,6 @@ def rsro(value, ratio, shift):
     rsro = Rs / (ratio * 1000)
     return rsro
 
-def roCO2Calibration(value, ratio, shift):
-    slope = -2.863140157
-    intercept = 2.032692781
-    sensor_volt = value / 1024 * 3.3
-    rs = 1000.0 * (5.0 - sensor_volt) / sensor_volt
-
-    #log10(ppm) = slope * log10(RS/R0) + intercept
-    #log10(ppm) - intercept = log10(RS/R0) * slope
-    #(log10(ppm)-intercept)/slope = log10(RS/R0)
-    #pow10(((log10(ppm)-intercept)/slope ) = RS/R0
-    #RO/RS = 1/(pow10(((log10(ppm)-intercept)/slope ))
-    #R0 = RS/(pow10(((log10(ppm)-intercept)/slope ))
-
-    # from library => ro = rs * pow((400/PARA), (1./PARB));
-    ro = rs / (math.pow(10,(math.log10(400) - intercept) / slope))
-    return ro
-
 def ratio(value, ratio, shift):
     return (ratio)
 
@@ -128,7 +111,7 @@ def Draw(str, color, axe, function=identity, linestyle='-'):
             _ratio = getRatio(temp, hum)
             from dateutil import parser
             dt = parser.parse(row[0])
-            if dt <= datetime.datetime.now()-datetime.timedelta(days=1):
+            if dt <= datetime.datetime.now()-datetime.timedelta(days=2):
                 continue
             x.append(dt)
             if function == identityTemp:
@@ -149,21 +132,44 @@ def Draw(str, color, axe, function=identity, linestyle='-'):
     # axe.spines['right'].set_position(('axes', 1.0 + (index - 1) * 0.05))
     # axe.spines['right'].set_color(color)
     axe.plot(x, y, color=color, linewidth=0.5, linestyle=linestyle,
-             label='{0} (min:{1:0.0f} ratio:{2:0.8f}) - {3}'.format(str, shift, ratio_shift, input))
+             label='{0} - {1}'.format(str, function.__name__) )
     axe.yaxis.label.set_color(color)
     axe.set_ylabel(str)
     axe.tick_params('y', color=color)
     return
 
+def roCO2Calibration(value, ratio, shift):
+    slope = -2.863140157
+    intercept = 2.032692781
+    sensor_volt = value / 1024 * 3.3
+    rs = 1000.0 * (5.0 - sensor_volt) / sensor_volt
+
+    #log10(ppm) = slope * log10(RS/R0) + intercept
+    #log10(ppm) - intercept = log10(RS/R0) * slope
+    #(log10(ppm)-intercept)/slope = log10(RS/R0)
+    #pow10(((log10(ppm)-intercept)/slope ) = RS/R0
+    #RO/RS = 1/(pow10(((log10(ppm)-intercept)/slope ))
+    #R0 = RS/(pow10(((log10(ppm)-intercept)/slope ))
+
+    # from library => ro = rs * pow((400/PARA), (1./PARB));
+    # ro = rs / (math.pow(10,(math.log10(400) - intercept) / slope))
+    ro = rs / (math.pow(10,(math.log10(400) - intercept) / slope))
+    #PARA = 116.6020682
+    #PARB = 2.769034857
+    #ro = rs * math.pow((411/PARA), (1./PARB))
+    return ro
 
 def ppmMQ135CO2(value, ratio, shift):
     sensor_volt = value / 1024 * 3.3
-    Rs = (5.0 - sensor_volt) / sensor_volt
-    Ro = 4500
+    Rs = 1000 * (5.0 - sensor_volt) / sensor_volt
+    Ro = 8200
     RsRo = Rs / (Ro * ratio)
     slope = -2.863140157
     intercept = 2.032692781
     ppm = math.pow(10, slope * math.log10(RsRo) + intercept)
+    #PARA = 116.6020682
+    #PARB = 2.769034857
+    #ppm = PARA * math.pow(RsRo,-PARB)
     return ppm
 
 
@@ -199,10 +205,13 @@ def ppmMQ135CO(value, ratio, shift):
     ppm = math.pow(10, slope * math.log10(RsRo) + intercept)
     return ppm
 
+def dustConcentration(value,ratio, shift):
+    c = (1.1 * value**3) - (3.8 * value**2) + (520 * value) + 0.62
+    return c
 
 print('-' * 120)
 
-fig = plt.figure(figsize=(17, 10))
+fig = plt.figure(figsize=(27, 17))
 ax1 = plt.subplot2grid((4, 1), (0, 0))
 ax12 = ax1.twinx()
 ax12.spines['right'].set_position(('axes', 1.0))
@@ -212,15 +221,25 @@ ax13.spines['right'].set_position(('axes', 1.04))
 ax13.spines['right'].set_color('b')
 ax2 = plt.subplot2grid((4, 1), (1, 0), sharex=ax1, rowspan=3)
 
-Draw('MQ135', 'y', ax1, identityTemp, '-')
-Draw('MQ135', 'g', ax12, identityHum, '-')
-Draw('MQ135', 'b', ax13, ratio, '-')
+Draw('dust', 'y', ax1, identityTemp, '-')
+Draw('dust', 'g', ax12, identityHum, '-')
+Draw('dust', 'b', ax13, dustConcentration, '-')
+
+#Draw('MQ135','b', ax2         , identity,'-')
+Draw('MQ135','g', ax2         , ppmMQ135CO2,'-')
+
+#Draw('MQ2','r', ax2         , identity,'-')
+
+
+#Draw('MQ135', 'y', ax1, identityTemp, '-')
+#Draw('MQ135', 'g', ax12, identityHum, '-')
+#Draw('MQ135', 'b', ax13, ratio, '-')
 #Draw('PPD42NS', 'b', ax1, identity)
 
-Draw('MQ135','b', ax2         , identity,'-')
-Draw('MQ135','r', ax2         , identitywithRatio,'-')
+#Draw('MQ135','b', ax2         , identity,'-')
+#Draw('MQ135','r', ax2         , identitywithRatio,'-')
 #Draw('MQ135','g',ax2          , roCO2Calibration,'-')
-Draw('MQ135','r', ax2         , ppmMQ135CO2,':')
+#Draw('MQ135','r', ax2         , ppmMQ135CO2,':')
 
 #Draw('MQ-135','b', ax2         , identity,'-')
 #Draw('MQ-7'  ,'r', ax2        , identity,'-')
@@ -251,5 +270,3 @@ ax2.xaxis.grid(True)
 plt.subplots_adjust(right=0.92)
 plt.show()
 
-cur.close()
-db.close()
