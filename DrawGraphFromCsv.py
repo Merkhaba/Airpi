@@ -1,12 +1,16 @@
 import math
 import csv
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import datetime
+from matplotlib.ticker import (AutoMinorLocator, MultipleLocator)
 
 tempArray = dict()
 humArray = dict()
 ratio_2065 = 1.0
+nb_days = 7
 
+files = {}
 
 def getRatio(temp, hum):
     tempArray = [-10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0]
@@ -25,8 +29,6 @@ def getRatio(temp, hum):
 def Interpolation(x, x1, x2, y1, y2):
     slope = (y2 - y1) / (x2 - x1)
     intercept = y2 - slope * x2
-    # print('slope {0}'.format(slope))
-    # print('intercept {0}'.format(intercept))
     return slope * x + intercept
 
 
@@ -97,11 +99,46 @@ def diffAgainstRatioWithShift(value, ratio, shift):
     return ret
 
 
+
+#def GetFiles(str):
+#    if str not in files:
+#        with open('Airpi_{0}.csv'.format(str)) as csvFile:
+#            rows = csv.reader(csvFile)
+#    return files[str]
+
+def DrawCorelation(str, color, axe, function):
+    x = list()
+    y = list()
+    from dateutil import parser
+    ref = datetime.datetime.now()-datetime.timedelta(days=nb_days)
+    with open('Airpi_{0}.csv'.format(str)) as csvFile:
+        rows = csv.reader(csvFile)
+        for row in rows:
+            dt = parser.parse(row[0])
+            if dt <= ref:
+                continue
+            temp = float(row[2])
+            hum = float(row[1])
+            if function == 'Temp':
+                y.append(float(temp))
+            else:
+                y.append(float(hum) )           
+            x.append(float(row[3]))
+    axe.spines['left'].set_color(color)
+    axe.scatter(x, y, color=color, label='{0} - {1}'.format(str, function), s=1 )
+    axe.yaxis.label.set_color(color)
+    axe.set_ylabel(function)
+    axe.tick_params('y', color=color)
+    return
+    
+
 def Draw(str, color, axe, function=identity, linestyle='-'):
     shift = 9999.9
     x = list()
     y = list()
     _ratio = 1.0
+    from dateutil import parser
+    ref = datetime.datetime.now()-datetime.timedelta(days=nb_days)
     with open('Airpi_{0}.csv'.format(str)) as csvFile:
         rows = csv.reader(csvFile)
         for row in rows:
@@ -111,7 +148,7 @@ def Draw(str, color, axe, function=identity, linestyle='-'):
             _ratio = getRatio(temp, hum)
             from dateutil import parser
             dt = parser.parse(row[0])
-            if dt <= datetime.datetime.now()-datetime.timedelta(days=2):
+            if dt <= ref:
                 continue
             x.append(dt)
             if function == identityTemp:
@@ -209,24 +246,46 @@ def dustConcentration(value,ratio, shift):
     c = (1.1 * value**3) - (3.8 * value**2) + (520 * value) + 0.62
     return c
 
-print('-' * 120)
+print('-' * 80)
 
 fig = plt.figure(figsize=(27, 17))
-ax1 = plt.subplot2grid((4, 1), (0, 0))
+ax1 = plt.subplot2grid((4, 6), (0, 0), colspan = 4)
+ax1.xaxis.set_minor_locator(mdates.HourLocator())
+ax1.grid(which='major', color='#CCCCCC', linestyle='--')
+ax1.grid(which='minor', color='#CCCCCC', linestyle=':')
+
 ax12 = ax1.twinx()
 ax12.spines['right'].set_position(('axes', 1.0))
 ax12.spines['right'].set_color('g')
 ax13 = ax1.twinx()
 ax13.spines['right'].set_position(('axes', 1.04))
 ax13.spines['right'].set_color('b')
-ax2 = plt.subplot2grid((4, 1), (1, 0), sharex=ax1, rowspan=3)
+
+ax2 = plt.subplot2grid((4, 6), (1, 0), sharex=ax1, rowspan=3, colspan=4)
+ax2.xaxis.set_minor_locator(mdates.HourLocator())
+ax2.grid(which='major', color='#CCCCCC', linestyle='--')
+ax2.grid(which='minor', color='#CCCCCC', linestyle=':')
+
+ax3 = plt.subplot2grid((4, 6), (0, 4), rowspan = 2, colspan = 2 )
+ax3.grid(which='major', color='#CCCCCC', linestyle='--')
+ax3.grid(which='minor', color='#CCCCCC', linestyle=':')
+
+ax4 = plt.subplot2grid((4, 6), (2, 4), rowspan = 2, colspan = 2 )
+ax4.grid(which='major', color='#CCCCCC', linestyle='--')
+ax4.grid(which='minor', color='#CCCCCC', linestyle=':')
 
 Draw('dust', 'y', ax1, identityTemp, '-')
 Draw('dust', 'g', ax12, identityHum, '-')
 Draw('dust', 'b', ax13, dustConcentration, '-')
+#Draw('MQ135', 'b', ax13, ratio, '-')
 
-#Draw('MQ135','b', ax2         , identity,'-')
-Draw('MQ135','g', ax2         , ppmMQ135CO2,'-')
+Draw('MQ2','b', ax2         , ppmMQ135CO2,'-')
+Draw('MQ135','r', ax2         , ppmMQ135CO2,'-')
+
+DrawCorelation( 'MQ135', 'y', ax3, 'Temp')
+DrawCorelation( 'MQ135', 'g', ax4, 'Hum')
+#Draw('MQ2','b', ax2         , identitywithRatio,'-')
+#Draw('MQ135','g', ax2         , identitywithRatio,'-')
 
 #Draw('MQ2','r', ax2         , identity,'-')
 
@@ -267,6 +326,6 @@ ax1.xaxis.grid(True)
 ax2.yaxis.grid(True)
 ax2.xaxis.grid(True)
 
-plt.subplots_adjust(right=0.92)
+#plt.subplots_adjust(right=0.92)
 plt.show()
 
