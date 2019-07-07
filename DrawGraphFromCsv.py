@@ -5,18 +5,19 @@ import matplotlib.dates as mdates
 import datetime
 from matplotlib.ticker import (AutoMinorLocator, MultipleLocator)
 from dateutil import parser
+import numpy as np
+from sklearn.linear_model import LinearRegression
 
 tempArray = dict()
 humArray = dict()
 ratio_2065 = 1.0
 nb_days = 7
-#datemin = datetime.datetime.strptime('04/07/2019 09:00:00', '%d/%m/%Y %H:%M:%S')
-#datemax = datetime.datetime.strptime('04/07/2019 12:00:00', '%d/%m/%Y %H:%M:%S')
-datemax = datetime.datetime.now()
+start = datetime.datetime.now()
+datemax = start
 datemin = datetime.datetime.now()-datetime.timedelta(days=nb_days)
 
-
-
+#datemin = datetime.datetime.strptime('07/07/2019 06:00:00', '%d/%m/%Y %H:%M:%S')
+#datemax = datetime.datetime.strptime('07/07/2019 10:00:00', '%d/%m/%Y %H:%M:%S')
 
 files = {}
 
@@ -108,33 +109,46 @@ def diffAgainstRatioWithShift(value, ratio, shift):
 
 
 
-#def GetFiles(str):
-#    if str not in files:
-#        with open('Airpi_{0}.csv'.format(str)) as csvFile:
-#            rows = csv.reader(csvFile)
-#    return files[str]
+def GetRowsFromFile(str):
+    if str not in files:
+        print ('Opening file {0}'.format(str))
+        with open('Airpi_{0}.csv'.format(str)) as csvFile:
+            rows = csv.reader(csvFile)
+            files[str] = list(rows)
+    return files[str]
 
 def DrawCorelation(str, color, axe, function):
     x = list()
     y = list()
-    with open('Airpi_{0}.csv'.format(str)) as csvFile:
-        rows = csv.reader(csvFile)
-        for row in rows:
-            dt = parser.parse(row[0])
-            if dt <= datemin or dt >= datemax:
-                continue
-            temp = float(row[2])
-            hum = float(row[1])
-            if function == 'Temp':
-                y.append(float(temp))
-            else:
-                y.append(float(hum) )           
-            x.append(math.log(float(row[3])))
+    #with open('Airpi_{0}.csv'.format(str)) as csvFile:
+    rows = GetRowsFromFile(str)
+    for row in reversed(rows):
+        dt = parser.parse(row[0])
+        if dt <= datemin:
+            break
+        if dt >= datemax:
+            continue
+        temp = float(row[2])
+        hum = float(row[1])
+        if function == 'Temp':
+            y.append(float(temp))
+        else:
+            y.append(float(hum) )           
+        x.append(math.log(float(row[3])))
     axe.spines['left'].set_color(color)
-    axe.scatter(x, y, color=color, label='{0} - {1}'.format(str, function), s=1 )
+    X1 = np.array(x)
+    Y1 = np.array(y)
+
+    X1 = X1.reshape(len(X1),1)
+    Y1 = Y1.reshape(len(Y1),1)
+    model = LinearRegression().fit(X1, Y1)
+    r_sq = model.score(X1, Y1)
+    axe.scatter(x, y, color=color, label='{0} - {1} - corr {2}'.format(str, function,r_sq), s=1 )
     axe.yaxis.label.set_color(color)
     axe.set_ylabel(function)
     axe.tick_params('y', color=color)
+    print('Draw {0} with  {1}/{2} plots - corr {3}'.format(str,len(x),len(y),r_sq ))
+    
     return
     
 
@@ -143,32 +157,30 @@ def Draw(str, color, axe, function=identity, linestyle='-'):
     x = list()
     y = list()
     _ratio = 1.0
-    from dateutil import parser
-    ref = datetime.datetime.now()-datetime.timedelta(days=nb_days)
-    with open('Airpi_{0}.csv'.format(str)) as csvFile:
-        rows = csv.reader(csvFile)
-        for row in rows:
-            #print('{0},{1},{2},{3}'.format(row[0], row[1], row[2],row[3]))
-            temp = float(row[2])
-            hum = float(row[1])
-            _ratio = getRatio(temp, hum)
-            dt = parser.parse(row[0])
-            if dt <= datemin or dt >= datemax:
-                continue
-            x.append(dt)
-            if function == identityTemp:
-                input = temp
-                str = 'Temperature'
-            elif function == identityHum:
-                input = hum
-                str = 'Humidity'
-            else:
-                input = float(row[3])
-            if input < shift:
-                ratio_shift = _ratio
-            shift = min(input, shift)
-            value = function(input, _ratio, shift)
-            y.append(value)
+    rows = GetRowsFromFile(str)
+    for row in reversed(rows):            
+        temp = float(row[2])
+        hum = float(row[1])
+        _ratio = getRatio(temp, hum)
+        dt = parser.parse(row[0])
+        if dt < datemin:
+            break
+        if dt > datemax:
+            continue
+        x.append(dt)
+        if function == identityTemp:
+            input = temp
+            str = 'Temperature'
+        elif function == identityHum:
+            input = hum
+            str = 'Humidity'
+        else:
+            input = float(row[3])
+        if input < shift:
+            ratio_shift = _ratio
+        shift = min(input, shift)
+        value = function(input, _ratio, shift)
+        y.append(value)
     axe.spines['left'].set_color(color)
     # axe = ax1.twinx()
     # axe.spines['right'].set_position(('axes', 1.0 + (index - 1) * 0.05))
@@ -178,6 +190,7 @@ def Draw(str, color, axe, function=identity, linestyle='-'):
     axe.yaxis.label.set_color(color)
     axe.set_ylabel(str)
     axe.tick_params('y', color=color)
+    print('Draw {0} with  {1}/{2} plots'.format(str,len(x),len(y) ))
     return
 
 def roCO2Calibration(value, ratio, shift):
@@ -332,5 +345,7 @@ ax2.yaxis.grid(True)
 ax2.xaxis.grid(True)
 
 #plt.subplots_adjust(right=0.92)
+end = datetime.datetime.now()
+print('finished in {0}'.format(end-start))
 plt.show()
 
