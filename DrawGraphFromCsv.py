@@ -4,11 +4,19 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import datetime
 from matplotlib.ticker import (AutoMinorLocator, MultipleLocator)
+from dateutil import parser
 
 tempArray = dict()
 humArray = dict()
 ratio_2065 = 1.0
 nb_days = 7
+#datemin = datetime.datetime.strptime('04/07/2019 09:00:00', '%d/%m/%Y %H:%M:%S')
+#datemax = datetime.datetime.strptime('04/07/2019 12:00:00', '%d/%m/%Y %H:%M:%S')
+datemax = datetime.datetime.now()
+datemin = datetime.datetime.now()-datetime.timedelta(days=nb_days)
+
+
+
 
 files = {}
 
@@ -109,13 +117,11 @@ def diffAgainstRatioWithShift(value, ratio, shift):
 def DrawCorelation(str, color, axe, function):
     x = list()
     y = list()
-    from dateutil import parser
-    ref = datetime.datetime.now()-datetime.timedelta(days=nb_days)
     with open('Airpi_{0}.csv'.format(str)) as csvFile:
         rows = csv.reader(csvFile)
         for row in rows:
             dt = parser.parse(row[0])
-            if dt <= ref:
+            if dt <= datemin or dt >= datemax:
                 continue
             temp = float(row[2])
             hum = float(row[1])
@@ -123,7 +129,7 @@ def DrawCorelation(str, color, axe, function):
                 y.append(float(temp))
             else:
                 y.append(float(hum) )           
-            x.append(float(row[3]))
+            x.append(math.log(float(row[3])))
     axe.spines['left'].set_color(color)
     axe.scatter(x, y, color=color, label='{0} - {1}'.format(str, function), s=1 )
     axe.yaxis.label.set_color(color)
@@ -146,9 +152,8 @@ def Draw(str, color, axe, function=identity, linestyle='-'):
             temp = float(row[2])
             hum = float(row[1])
             _ratio = getRatio(temp, hum)
-            from dateutil import parser
             dt = parser.parse(row[0])
-            if dt <= ref:
+            if dt <= datemin or dt >= datemax:
                 continue
             x.append(dt)
             if function == identityTemp:
