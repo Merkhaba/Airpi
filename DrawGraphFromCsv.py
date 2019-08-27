@@ -11,7 +11,7 @@ from sklearn.linear_model import LinearRegression
 tempArray = dict()
 humArray = dict()
 ratio_2065 = 1.0
-nb_days = 7
+nb_days = 14
 start = datetime.datetime.now()
 datemax = start
 datemin = datetime.datetime.now()-datetime.timedelta(days=nb_days)
@@ -113,7 +113,7 @@ def GetRowsFromFile(str):
     if str not in files:
         print ('Opening file {0}'.format(str))
         with open('Airpi_{0}.csv'.format(str)) as csvFile:
-            rows = csv.reader(csvFile)
+            rows = csv.reader(line.replace('\0','') for line in csvFile)
             files[str] = list(rows)
     return files[str]
 
@@ -133,8 +133,8 @@ def DrawCorelation(str, color, axe, function):
         if function == 'Temp':
             y.append(float(temp))
         else:
-            y.append(float(hum) )           
-        x.append(math.log(float(row[3])))
+            y.append(float(hum) )
+        x.append(float(row[3]))
     axe.spines['left'].set_color(color)
     X1 = np.array(x)
     Y1 = np.array(y)
@@ -148,9 +148,9 @@ def DrawCorelation(str, color, axe, function):
     axe.set_ylabel(function)
     axe.tick_params('y', color=color)
     print('Draw {0} with  {1}/{2} plots - corr {3}'.format(str,len(x),len(y),r_sq ))
-    
+
     return
-    
+
 
 def Draw(str, color, axe, function=identity, linestyle='-'):
     shift = 9999.9
@@ -158,7 +158,7 @@ def Draw(str, color, axe, function=identity, linestyle='-'):
     y = list()
     _ratio = 1.0
     rows = GetRowsFromFile(str)
-    for row in reversed(rows):            
+    for row in reversed(rows):
         temp = float(row[2])
         hum = float(row[1])
         _ratio = getRatio(temp, hum)
@@ -178,6 +178,8 @@ def Draw(str, color, axe, function=identity, linestyle='-'):
             input = float(row[3])
         if input < shift:
             ratio_shift = _ratio
+        input = min(input,1023)
+        input = max(input,1)
         shift = min(input, shift)
         value = function(input, _ratio, shift)
         y.append(value)
@@ -348,4 +350,3 @@ ax2.xaxis.grid(True)
 end = datetime.datetime.now()
 print('finished in {0}'.format(end-start))
 plt.show()
-
